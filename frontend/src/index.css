@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  body {
+    @apply bg-gray-950 text-gray-100 font-sans antialiased;
+    margin: 0;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-gray-900; }
+  ::-webkit-scrollbar-thumb { @apply bg-navy-600 rounded-full; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-navy-600 hover:bg-navy-700
+           text-white text-sm font-medium transition-all duration-200 shadow-md
+           hover:shadow-navy-600/30 active:scale-95;
+  }
+  .btn-success {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500
+           text-white text-sm font-medium transition-all duration-200 shadow-md active:scale-95;
+  }
+  .btn-danger {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-700 hover:bg-red-600
+           text-white text-sm font-medium transition-all duration-200 shadow-md active:scale-95;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg
+           text-gray-300 hover:text-white hover:bg-white/10
+           text-sm font-medium transition-all duration-200 active:scale-95;
+  }
+  .card {
+    @apply bg-gray-900 border border-gray-800 rounded-xl shadow-lg;
+  }
+  .card-glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl shadow-lg;
+  }
+  .input-field {
+    @apply w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg
+           text-gray-100 placeholder-gray-500 text-sm
+           focus:outline-none focus:ring-2 focus:ring-navy-600 focus:border-transparent
+           transition-all duration-200;
+  }
+  .label {
+    @apply block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+  .table-row-hover {
+    @apply hover:bg-white/5 transition-colors duration-150;
+  }
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium
+           text-gray-400 hover:text-white hover:bg-white/10 cursor-pointer
+           transition-all duration-200;
+  }
+  .sidebar-item-active {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium
+           text-white bg-navy-600/80 shadow-md cursor-pointer;
+  }
+  .tab-btn {
+    @apply px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
+           text-gray-400 hover:text-white hover:bg-white/10;
+  }
+  .tab-btn-active {
+    @apply px-5 py-2.5 rounded-lg text-sm font-medium
+           text-white bg-navy-600 shadow-md;
+  }
+  .definition-card {
+    @apply card p-5 border-l-4 border-emerald-500 hover:border-emerald-400
+           hover:shadow-emerald-900/30 hover:shadow-xl transition-all duration-300
+           hover:-translate-y-1;
+  }
+  .iso-card {
+    @apply card p-5 hover:border-navy-600 hover:shadow-navy-900/30
+           hover:shadow-xl transition-all duration-300 hover:-translate-y-1;
+  }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-fade-in  { animation: fadeIn 0.3s ease forwards; }
+.animate-slide-in { animation: slideIn 0.3s ease forwards; }
+.animate-toast-in { animation: toastIn 0.3s ease forwards; }
+
+/* Leaflet overrides */
+.leaflet-container {
+  background: #1a1a2e !important;
+  border-radius: 0.5rem;
+}
+.leaflet-control-zoom a {
+  background-color: #1e3a5f !important;
+  color: white !important;
+  border-color: #162d4a !important;
+}

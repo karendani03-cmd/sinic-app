@@ -1,0 +1,27 @@
+echo. > .gitignore
+
+# Credenciales - NUNCA subir esto
+.env
+*.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.pyc
+venv/
+env/
+
+# Node
+node_modules/
+dist/
+.next/
+
+# Base de datos
+*.sql
+*.dump
+*.backup
+
+# Sistema
+.DS_Store
+Thumbs.db 
