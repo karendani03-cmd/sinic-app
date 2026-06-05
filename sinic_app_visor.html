@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SINIC App — Visor e Interfaz Interactiva</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Inter & Fira Code -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#1e3a5f',
+              700: '#162d4a',
+              800: '#0f2035',
+              900: '#071525',
+              950: '#030b14',
+            },
+            emerald: {
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #030b14;
+      color: #f3f4f6;
+    }
+    .leaflet-container {
+      background: #0f172a !important;
+      border-radius: 0.5rem;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #070f19;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #1e3a5f;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased custom-scrollbar">
+
+  <!-- NOTIFICACIONES TOAST -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- HEADER / NAVBAR -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-navy-950/90 backdrop-blur-md border-b border-navy-800/80 shadow-lg">
+    <div class="max-w-screen-2xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      <!-- Logo -->
+      <a href="#" onclick="switchMainTab('aprende-sinic')" class="flex items-center gap-3 shrink-0">
+        <div class="w-9 h-9 rounded-lg bg-navy-600 flex items-center justify-center shadow-md">
+          <i data-lucide="database" class="text-emerald-400 w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-white font-bold text-lg leading-none block">SINIC App</span>
+          <span class="block text-gray-500 text-[10px] font-medium leading-none tracking-widest uppercase mt-0.5">LADM-COL V1.0</span>
+        </div>
+      </a>
+
+      <!-- Menu Principal -->
+      <nav class="flex items-center gap-1">
+        <button id="tab-btn-aprende-sinic" onclick="switchMainTab('aprende-sinic')" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-white bg-navy-600 shadow-md">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+          <span class="hidden md:inline">Aprende SINIC</span>
+        </button>
+        <button id="tab-btn-aprende-uml" onclick="switchMainTab('aprende-uml')" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-400 hover:text-white hover:bg-white/5">
+          <i data-lucide="code-2" class="w-4 h-4"></i>
+          <span class="hidden md:inline">Aprende UML</span>
+        </button>
+        <button id="tab-btn-modelo-datos" onclick="switchMainTab('modelo-datos')" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-400 hover:text-white hover:bg-white/5">
+          <i data-lucide="map" class="w-4 h-4"></i>
+          <span class="hidden md:inline">Modelo de Datos</span>
+        </button>
+      </nav>
+
+      <!-- Indicador Estado API/BD -->
+      <div id="db-status-indicator" class="flex items-center gap-1.5 px-3 py-1 rounded-full border border-yellow-400/20 bg-yellow-400/10 text-yellow-400 text-xs font-medium cursor-pointer" onclick="checkBackendHealth()">
+        <i data-lucide="activity" class="w-3.5 h-3.5 animate-pulse"></i>
+        <span class="hidden sm:inline">Modo Demo</span>
+        <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== SECCIÓN 1: APRENDE SINIC ==================== -->
+  <main id="view-aprende-sinic" class="min-h-screen pt-24 pb-12 px-4 max-w-5xl mx-auto space-y-8">
+    <div class="text-center space-y-3">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+        <i data-lucide="shield-check" class="w-3 h-3"></i> Resolución 301 de 2025
+      </div>
+      <h1 class="text-4xl font-extrabold text-white tracking-tight">Sistema Nacional de Información Catastral</h1>
+      <p class="text-gray-400 text-base max-w-2xl mx-auto">
+        Marco regulatorio e infraestructura para la interoperabilidad del catastro multipropósito en Colombia.
+      </p>
+    </div>
+
+    <!-- Sub-Tabs de Aprendizaje -->
+    <div class="flex border-b border-navy-800">
+      <button onclick="switchAprendeTab('sub-resolucion')" id="subtab-resolucion" class="border-b-2 border-emerald-500 text-white px-4 py-3 text-sm font-medium flex items-center gap-2">
+        <i data-lucide="scale" class="w-4 h-4"></i> Resolución 301
+      </button>
+      <button onclick="switchAprendeTab('sub-iso')" id="subtab-iso" class="border-b-2 border-transparent text-gray-400 hover:text-white px-4 py-3 text-sm font-medium flex items-center gap-2">
+        <i data-lucide="globe" class="w-4 h-4"></i> Estándares ISO 19152
+      </button>
+      <button onclick="switchAprendeTab('sub-interlis')" id="subtab-interlis" class="border-b-2 border-transparent text-gray-400 hover:text-white px-4 py-3 text-sm font-medium flex items-center gap-2">
+        <i data-lucide="file-json" class="w-4 h-4"></i> INTERLIS y XTF
+      </button>
+    </div>
+
+    <!-- Sub-tab 1: Resolución 301 -->
+    <div id="panel-sub-resolucion" class="space-y-6">
+      <div class="bg-navy-900/40 border border-navy-800 rounded-xl p-6 shadow-md">
+        <h2 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
+          <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span> Qué es la Resolución 301 de 2025
+        </h2>
+        <p class="text-gray-300 text-sm leading-relaxed">
+          Expedida por el IGAC, esta resolución establece los lineamientos técnicos oficiales para la estructuración, cargue y reporte de la información física, jurídica y económica del catastro en el SINIC. Es el marco que oficializa el submodelo LADM_COL SINIC V1.0 como lenguaje de transferencia nacional.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="definitions-grid">
+        <!-- Las tarjetas se generan por JS -->
+      </div>
+    </div>
+
+    <!-- Sub-tab 2: ISO 19152 -->
+    <div id="panel-sub-iso" class="hidden space-y-4">
+      <div class="bg-navy-900/40 border border-navy-800 rounded-xl p-6">
+        <p class="text-gray-300 text-sm leading-relaxed">
+          El estándar internacional <strong>ISO 19152 (LADM)</strong> provee un modelo conceptual formal para la administración de tierras. Facilita la creación de sistemas descentralizados e interoperables entre el registro de la propiedad y el catastro físico.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 gap-4" id="iso-grid">
+        <!-- Las tarjetas se generan por JS -->
+      </div>
+    </div>
+
+    <!-- Sub-tab 3: INTERLIS y XTF -->
+    <div id="panel-sub-interlis" class="hidden space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-navy-900/40 border border-navy-800 rounded-xl p-5">
+          <h3 class="text-white font-bold mb-2 flex items-center gap-2 text-sm">
+            <i data-lucide="terminal" class="text-emerald-400 w-4 h-4"></i> ¿Qué es INTERLIS?
+          </h3>
+          <p class="text-gray-400 text-xs leading-relaxed">
+            Es un lenguaje de modelado de datos conceptuales y de transferencia espacial originado en Suiza. Es independiente del software y bases de datos, permitiendo definir esquemas estrictos sin atarse a un sistema GIS particular.
+          </p>
+        </div>
+        <div class="bg-navy-900/40 border border-navy-800 rounded-xl p-5">
+          <h3 class="text-white font-bold mb-2 flex items-center gap-2 text-sm">
+            <i data-lucide="file-type" class="text-emerald-400 w-4 h-4"></i> ¿Qué es el formato XTF?
+          </h3>
+          <p class="text-gray-400 text-xs leading-relaxed">
+            Es la codificación física XML del modelo de datos estructurado en INTERLIS. Un archivo XTF contiene la instancia física de los datos catastrales (predios, linderos, interesados) lista para ser validada con el compilador oficial de INTERLIS.
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-navy-950 border border-navy-800 rounded-xl overflow-hidden shadow-2xl">
+        <div class="bg-navy-900 px-4 py-2.5 flex items-center gap-2 border-b border-navy-800 text-xs">
+          <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+          <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+          <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+          <span class="font-mono text-gray-400 ml-2">ejemplo_transferencia.xtf</span>
+        </div>
+        <pre class="p-4 overflow-x-auto text-xs font-mono text-gray-300 leading-relaxed custom-scrollbar"><code id="code-snippet-xtf"></code></pre>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== SECCIÓN 2: APRENDE UML ==================== -->
+  <main id="view-aprende-uml" class="hidden min-h-screen pt-24 pb-12 px-4 max-w-5xl mx-auto space-y-8">
+    <div class="text-center space-y-2">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
+        <i data-lucide="code-2" class="w-3 h-3"></i> Modelado de Datos
+      </div>
+      <h1 class="text-3xl font-extrabold text-white">Conceptos de UML y Diagramas de Clase</h1>
+      <p class="text-gray-400 text-sm max-w-xl mx-auto">
+        UML permite graficar visualmente el submodelo LADM_COL SINIC antes de estructurarlo físicamente en bases de datos geográficas.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Explicaciones -->
+      <div class="lg:col-span-1 space-y-4">
+        <div class="bg-navy-900/30 border border-navy-800 rounded-xl p-5">
+          <h2 class="text-white font-bold text-sm mb-3 flex items-center gap-2">
+            <i data-lucide="box" class="w-4 h-4 text-emerald-400"></i> ¿Qué es una Clase UML?
+          </h2>
+          <p class="text-gray-400 text-xs leading-relaxed mb-3">
+            Es la representación de un concepto catastral o legal. Se representa con un rectángulo dividido en:
+          </p>
+          <ul class="text-xs text-gray-300 space-y-2 pl-2 border-l-2 border-navy-700">
+            <li><strong>1. Nombre:</strong> Identificador único (Ej: <code class="text-emerald-400">LA_Party</code>)</li>
+            <li><strong>2. Atributos:</strong> Propiedades del objeto con tipos de datos (Ej: <code class="text-blue-400">name</code>)</li>
+            <li><strong>3. Operaciones:</strong> Funcionalidades (usualmente vacías en modelos conceptuales LADM)</li>
+          </ul>
+        </div>
+
+        <div class="bg-navy-900/30 border border-navy-800 rounded-xl p-5">
+          <h2 class="text-white font-bold text-sm mb-3 flex items-center gap-2">
+            <i data-lucide="git-branch" class="w-4 h-4 text-emerald-400"></i> Relaciones en LADM_COL
+          </h2>
+          <div class="space-y-3">
+            <div class="text-xs">
+              <span class="font-semibold text-white">Asociación (Línea discontinua con flecha):</span>
+              <p class="text-gray-400 mt-0.5">Vínculo lógico. Ej: Un interesado (<code class="text-indigo-400">LA_Party</code>) está asociado a una unidad administrativa (<code class="text-cyan-400">LA_BAUnit</code>).</p>
+            </div>
+            <div class="text-xs">
+              <span class="font-semibold text-white">Multiplicidad:</span>
+              <p class="text-gray-400 mt-0.5"><code class="text-emerald-400">1..*</code> significa que al menos un objeto debe existir. <code class="text-emerald-400">0..*</code> indica opcionalidad.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diagrama SVG interactivo -->
+      <div class="lg:col-span-2 bg-navy-950 border border-navy-800 rounded-xl p-6 flex flex-col justify-between shadow-2xl relative">
+        <div class="absolute top-4 right-4 bg-navy-900/60 border border-navy-800 px-2.5 py-1 rounded text-[10px] text-emerald-400 font-mono">
+          Interactivo - Pasa el cursor
+        </div>
+        <h3 class="text-white font-semibold text-sm mb-4">Diagrama de Clases del Núcleo SINIC</h3>
+
+        <div class="flex-1 flex items-center justify-center" id="svg-container">
+          <!-- Insertamos el SVG dinámicamente -->
+        </div>
+
+        <div id="uml-info-box" class="mt-4 bg-navy-900/50 border border-navy-800 rounded-lg p-3 text-xs min-h-[60px] text-gray-400 flex items-center justify-center">
+          Pasa el cursor sobre una clase UML para ver sus atributos y equivalencia física en base de datos.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== SECCIÓN 3: MODELO DE DATOS (CRUDs) ==================== -->
+  <main id="view-modelo-datos" class="hidden min-h-screen pt-16 flex">
+    <!-- Sidebar Izquierdo -->
+    <aside class="w-64 bg-navy-950 border-r border-navy-800 flex flex-col fixed left-0 top-16 bottom-0 z-40 shrink-0">
+      <div class="px-4 py-3 border-b border-navy-800">
+        <span class="text-white font-semibold text-xs uppercase tracking-wider block">Módulos LADM_COL</span>
+        <span class="text-gray-500 text-[10px] font-mono">Magna-Sirgas / SRID 9377</span>
+      </div>
+
+      <nav class="flex-1 p-2 space-y-1 overflow-y-auto custom-scrollbar" id="sidebar-menu">
+        <!-- Generado por JS -->
+      </nav>
+
+      <div class="p-3 border-t border-navy-800 bg-navy-950">
+        <div class="bg-white/5 border border-white/10 rounded-lg p-2.5 text-center">
+          <div class="text-gray-500 text-[9px] font-bold uppercase tracking-wider">Modo Activo</div>
+          <div id="db-health-badge" class="text-yellow-400 font-bold text-xs mt-0.5">LOCAL MOCKUP</div>
+          <div class="text-gray-600 text-[9px] mt-1 leading-snug">Se sincroniza automáticamente si detecta API FastAPI local.</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Área de Contenido Principal del CRUD -->
+    <section class="flex-1 ml-64 p-6 bg-navy-950/40 min-h-screen custom-scrollbar">
+      <!-- Breadcrumbs -->
+      <div class="flex items-center gap-2 text-xs text-gray-500 mb-6">
+        <span>Modelo de Datos</span>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+        <span class="text-white font-medium" id="crud-active-label">Unidad Administrativa</span>
+        <span class="ml-auto font-mono bg-navy-900 border border-navy-800 px-2 py-0.5 rounded text-gray-400" id="crud-table-name">col_baunit</span>
+      </div>
+
+      <!-- Vista CRUD Dinámica -->
+      <div class="space-y-6">
+        <!-- Header Tabla -->
+        <div class="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 class="text-2xl font-bold text-white tracking-tight" id="crud-title">Unidades Administrativas</h2>
+            <p class="text-gray-400 text-xs mt-1" id="crud-description">Gestión de predios catastrales legalmente constituidos.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="checkBackendHealth(true)" class="p-2 rounded-lg bg-navy-900 border border-navy-800 hover:bg-navy-800 transition text-gray-400 hover:text-white" title="Sincronizar/Refrescar">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+            <button onclick="openFormModal()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-lg shadow-emerald-900/20 active:scale-95">
+              <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Registro
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabla de Datos -->
+        <div class="bg-navy-900/60 border border-navy-800 rounded-xl overflow-hidden shadow-xl">
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-sm">
+              <thead class="bg-navy-900 border-b border-navy-800 text-gray-400 font-semibold text-xs uppercase tracking-wider">
+                <tr id="table-headers">
+                  <!-- Headers dinámicos -->
+                </tr>
+              </thead>
+              <tbody id="table-body" class="divide-y divide-navy-800/40 text-gray-300">
+                <!-- Filas dinámicas -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginación -->
+          <div class="px-4 py-3 bg-navy-900/30 border-t border-navy-800 flex items-center justify-between text-xs text-gray-500">
+            <span id="pagination-info">Mostrando 0 registros</span>
+            <div class="flex items-center gap-1">
+              <button disabled class="p-1 rounded hover:bg-white/5 disabled:opacity-20 transition cursor-not-allowed">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+              </button>
+              <span class="px-2 font-medium">Pág. 1</span>
+              <button disabled class="p-1 rounded hover:bg-white/5 disabled:opacity-20 transition cursor-not-allowed">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL FORMULARIO CRUD -->
+  <div id="crud-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
+    <div class="bg-navy-900 border border-navy-800 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl scale-95 transition-all duration-300">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-navy-800 shrink-0">
+        <h2 id="modal-title" class="text-white font-bold text-lg">Nuevo Registro</h2>
+        <button onclick="closeFormModal()" class="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Campos Dinámicos) -->
+      <div class="overflow-y-auto flex-1 px-6 py-5 custom-scrollbar" id="modal-fields-container">
+        <!-- Renderizado dinámico de campos de entrada -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex justify-end gap-3 px-6 py-4 border-t border-navy-800 bg-navy-900 shrink-0">
+        <button onclick="closeFormModal()" class="px-4 py-2 border border-navy-700 hover:bg-white/5 rounded-lg text-sm text-gray-300 font-semibold transition">Cancelar</button>
+        <button onclick="saveRecord()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm text-white font-semibold shadow-lg shadow-emerald-950/50 transition active:scale-95">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT DE LÓGICA DE APLICACIÓN -->
+  <script>
+    // --- DATOS Y ESQUEMAS EDUCATIVOS ---
+    const DEFINICIONES = [
+      { term: 'Gestor catastral', def: 'Entidad pública o privada habilitada por el IGAC para prestar los servicios de levantamiento y conservación de información catastral multipropósito.' },
+      { term: 'Predio', def: 'Unidad inmobiliaria básica catastral compuesta por terrenos y construcciones, registrada bajo un folio de matrícula inmobiliaria y número predial.' },
+      { term: 'Unidad Administrativa', def: 'Representación física/legal de un predio con derechos reales (clase LADM: LA_BAUnit / col_baunit).' },
+      { term: 'Unidad Espacial', def: 'La delimitación geográfica o lindero tridimensional asociado a la tenencia catastral de un predio (col_terreno, col_lindero).' },
+      { term: 'Interesado', def: 'Persona natural o jurídica (propietario, poseedor, ocupante) vinculada legalmente a un predio (clase LADM: LA_Party / col_interesado).' },
+      { term: 'LADM_COL', def: 'Adaptación para Colombia del modelo estándar de administración de tierras ISO 19152.' },
+      { term: 'Cartografía catastral', def: 'El mapeo geométrico-espacial preciso de los linderos prediales y de las construcciones (cc_construccion).' },
+      { term: 'Submodelo', def: 'Esquema de datos derivado que añade terminología técnica específica para casos concretos como el SINIC.' }
+    ];
+
+    const ESTANDARES_ISO = [
+      { code: 'ISO 19152-1:2024', title: 'LADM — Parte 1: Marco general', icon: 'globe', desc: 'Define las clases núcleo para modelar la relación persona-tierra de forma conceptual e independiente.' },
+      { code: 'ISO 19152-2:2025', title: 'LADM — Parte 2: Registro de derechos', icon: 'scale', desc: 'Regula los derechos, restricciones y responsabilidades sobre las parcelas inmobiliarias.' },
+      { code: 'ISO 19152-3:2024', title: 'LADM — Parte 3: Catastro 3D', icon: 'box', desc: 'Extiende el marco conceptual para representar la geometría 3D y los planos de propiedad horizontal.' },
+      { code: 'ISO 19152-4:2025', title: 'LADM — Parte 4: Valuación', icon: 'coins', desc: 'Modelo de datos estandarizado para procesos de avalúos y valuación fiscal de terrenos.' },
+      { code: 'ISO 19152-5:2025', title: 'LADM — Parte 5: Gestión espacial', icon: 'map', desc: 'Enfoque hacia el ordenamiento territorial y planeación espacial urbana en LADM.' }
+    ];
+
+    const XML_XTF_CODE = `<?xml version="1.0" encoding="UTF-8"?>
+<TRANSFER xmlns="http://www.interlis.ch/INTERLIS2.3">
+  <HEADERSECTION>
+    <MODELS>
+      <MODEL NAME="LADM_COL_SINIC_V1_0" VERSION="2025-05-18" />
+    </MODELS>
+  </HEADERSECTION>
+  <DATASECTION>
+    <!-- Registro col_baunit (Unidad Administrativa) -->
+    <LADM_COL_SINIC_V1_0.col_baunit TID="ba1">
+      <t_ili_tid>8147df2d-6bb5-4c07-b248-b4b3c4f74d0a</t_ili_tid>
+      <nombre>Predio Campestre El Sol</nombre>
+      <tipo>Predio</tipo>
+      <departamento>Cundinamarca</departamento>
+      <municipio>Sopó</municipio>
+    </LADM_COL_SINIC_V1_0.col_baunit>
+
+    <!-- Registro col_terreno (Geometría SRID 9377) -->
+    <LADM_COL_SINIC_V1_0.col_terreno TID="te1">
+      <t_ili_tid>f8f2b740-c782-41ba-bd29-c09a32cbf812</t_ili_tid>
+      <area_calculada>4520.50</area_calculada>
+      <dimension>2D</dimension>
+      <geometria>POLYGON((4812354 2061245, 4812400 2061245, 4812400 2061200, 4812354 2061200, 4812354 2061245))</geometria>
+    </LADM_COL_SINIC_V1_0.col_terreno>
+  </DATASECTION>
+</TRANSFER>`;
+
+    // --- MOCK DATABASE (Almacenada en LocalStorage para persistencia demo) ---
+    const DEFAULT_DB = {
+      baunit: [
+        { t_id: 1, t_ili_tid: '8147df2d-6bb5-4c07-b248-b4b3c4f74d0a', nombre: 'Predio Campestre El Sol', tipo: 'Predio', departamento: 'Cundinamarca', municipio: 'Sopó' },
+        { t_id: 2, t_ili_tid: 'cd4cfd89-c456-4cf3-9ad4-e49051fb87d2', nombre: 'Finca Los Pinos', tipo: 'Terreno', departamento: 'Antioquia', municipio: 'Envigado' },
+        { t_id: 3, t_ili_tid: 'aef059db-3f82-45bb-b6cb-df49cb0faee0', nombre: 'Condominio Altavista U3', tipo: 'Construccion', departamento: 'Valle del Cauca', municipio: 'Cali' }
+      ],
+      espacial: [
+        { t_id: 1, t_ili_tid: 'f8f2b740-c782-41ba-bd29-c09a32cbf812', area_calculada: 4520.50, dimension: '2D', geometria: 'POLYGON((4812354 2061245, 4812400 2061245, 4812400 2061200, 4812354 2061200, 4812354 2061245))' },
+        { t_id: 2, t_ili_tid: '984cfb72-c2e0-47de-9df2-bb035c91ffc1', area_calculada: 120.30, dimension: '3D', geometria: 'POLYGON((4812800 2061500, 4812850 2061500, 4812850 2061450, 4812800 2061450, 4812800 2061500))' }
+      ],
+      interesados: [
+        { t_id: 1, t_ili_tid: '88cd1a2d-df7b-402a-9ac2-f04bf4cfbbd5', nombre: 'Carlos Mario Restrepo', tipo_documento: 'CC', numero_documento: '102048592', tipo_interesado: 'natural' },
+        { t_id: 2, t_ili_tid: 'cc0489db-cf34-40fe-8f0a-ce04bbdf56ee', nombre: 'Inmobiliaria S.A.S', tipo_documento: 'NIT', numero_documento: '900124589-1', tipo_interesado: 'juridico' }
+      ],
+      topografia: [
+        { t_id: 1, t_ili_tid: '44de0d82-dfbc-47cb-b4e0-ee01ca0facdf', exactitud_horizontal: 0.05, exactitud_vertical: 0.08, metodo_produccion: 'GNSS', posicion_interpolacion: 'POINT(4812354 2061245)' },
+        { t_id: 2, t_ili_tid: 'ee23cb82-cf8a-40a2-ad29-de9801cabcf8', exactitud_horizontal: 0.02, exactitud_vertical: 0.04, metodo_produccion: 'Estación Total', posicion_interpolacion: 'POINT(4812800 2061500)' }
+      ],
+      cartografia: [
+        { t_id: 1, t_ili_tid: 'ff87ab2d-dfcb-48bc-a82f-cc01fabc82ea', tipo_construccion: 'Residencial', tipo_dominio: 'Privado', numero_pisos: 2, geometria: 'POLYGON((4812360 2061240, 4812380 2061240, 4812380 2061220, 4812360 2061220, 4812360 2061240))' },
+        { t_id: 2, t_ili_tid: '99bcda82-dfbc-40bc-8fed-bc02fa1cabee', tipo_construccion: 'Comercial', tipo_dominio: 'Público', numero_pisos: 4, geometria: 'POLYGON((4812810 2061490, 4812840 2061490, 4812840 2061460, 4812810 2061460, 4812810 2061490))' }
+      ]
+    };
+
+    let localDatabase = JSON.parse(localStorage.getItem('sinic_db')) || DEFAULT_DB;
+    let apiHealthState = { api: 'offline', database: { status: 'offline', message: '' } };
+
+    // --- CONFIGURACIÓN DE LOS MÓDULOS DEL CRUD ---
+    const CRUD_CONFIG = {
+      baunit: {
+        title: 'Unidad Administrativa',
+        tableName: 'col_baunit',
+        description: 'Gestión catastral y registral de los predios del SINIC.',
+        fields: [
+          { name: 'nombre', label: 'Nombre Predio', type: 'text', required: true, placeholder: 'Ej: Hacienda Palmira' },
+          { name: 'tipo', label: 'Tipo de Predio', type: 'select', options: ['Predio', 'Terreno', 'Construccion', 'Mejora'], required: true },
+          { name: 'departamento', label: 'Departamento', type: 'text', required: true, placeholder: 'Ej: Cundinamarca' },
+          { name: 'municipio', label: 'Municipio', type: 'text', required: true, placeholder: 'Ej: Sopó' }
+        ],
+        headers: ['ID', 'Nombre', 'Tipo', 'Departamento', 'Municipio', 'ILI TID']
+      },
+      espacial: {
+        title: 'Unidad Espacial',
+        tableName: 'col_terreno',
+        description: 'Gestión y delimitación de geometrías espaciales del terreno.',
+        fields: [
+          { name: 'area_calculada', label: 'Área Calculada (m²)', type: 'number', required: true, placeholder: 'Ej: 1450.75' },
+          { name: 'dimension', label: 'Dimensión', type: 'select', options: ['2D', '3D'], required: true },
+          { name: 'geometria', label: 'Geometría WKT (POLYGON)', type: 'map', required: true, geomType: 'polygon' }
+        ],
+        headers: ['ID', 'Área (m²)', 'Dimensión', 'Geometría WKT', 'ILI TID']
+      },
+      interesados: {
+        title: 'Interesados',
+        tableName: 'col_interesado',
+        description: 'Registro de personas naturales o jurídicas con relación al predio.',
+        fields: [
+          { name: 'nombre', label: 'Nombre Completo / Razón Social', type: 'text', required: true, placeholder: 'Ej: Juan Pérez' },
+          { name: 'tipo_documento', label: 'Tipo de Documento', type: 'select', options: ['CC', 'NIT', 'CE', 'PA', 'TI'], required: true },
+          { name: 'numero_documento', label: 'Número de Documento', type: 'text', required: true, placeholder: 'Ej: 101428590' },
+          { name: 'tipo_interesado', label: 'Tipo de Interesado', type: 'select', options: ['natural', 'juridico'], required: true }
+        ],
+        headers: ['ID', 'Nombre', 'Tipo Doc.', 'Documento', 'Tipo Interesado', 'ILI TID']
+      },
+      topografia: {
+        title: 'Topografía y Representación',
+        tableName: 'col_punto',
+        description: 'Puntos de control, exactitud horizontal y vertical.',
+        fields: [
+          { name: 'exactitud_horizontal', label: 'Exactitud Horizontal (m)', type: 'number', required: true, placeholder: 'Ej: 0.05' },
+          { name: 'exactitud_vertical', label: 'Exactitud Vertical (m)', type: 'number', required: true, placeholder: 'Ej: 0.08' },
+          { name: 'metodo_produccion', label: 'Método de Producción', type: 'select', options: ['GNSS', 'Estación Total', 'Lidar', 'Fotogrametría'], required: true },
+          { name: 'posicion_interpolacion', label: 'Posición Geometría WKT (POINT)', type: 'map', required: true, geomType: 'point' }
+        ],
+        headers: ['ID', 'Exc. H (m)', 'Exc. V (m)', 'Método', 'Punto Geometría', 'ILI TID']
+      },
+      cartografia: {
+        title: 'Cartografía Catastral',
+        tableName: 'cc_construccion',
+        description: 'Polígonos de edificaciones y unidades de construcción.',
+        fields: [
+          { name: 'tipo_construccion', label: 'Tipo de Construcción', type: 'select', options: ['Residencial', 'Comercial', 'Industrial', 'Institucional'], required: true },
+          { name: 'tipo_dominio', label: 'Tipo de Dominio', type: 'select', options: ['Privado', 'Público', 'Mixto'], required: true },
+          { name: 'numero_pisos', label: 'Número de Pisos', type: 'number', required: true, placeholder: 'Ej: 3' },
+          { name: 'geometria', label: 'Geometría WKT (POLYGON)', type: 'map', required: true, geomType: 'polygon' }
+        ],
+        headers: ['ID', 'Construcción', 'Dominio', 'Pisos', 'Geometría WKT', 'ILI TID']
+      }
+    };
+
+    let activeModule = 'baunit';
+    let editRecordId = null;
+
+    // --- LEAFLET MAP STATE ---
+    let mapInstance = null;
+    let drawMarker = null;
+
+    // --- INICIALIZAR LA APLICACIÓN ---
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      renderDefinitions();
+      renderISOStandards();
+      renderXTFCode();
+      renderUMLDiagram();
+      renderSidebarMenu();
+      renderCRUDTable();
+      checkBackendHealth();
+    });
+
+    // --- NOTIFICACIONES TOAST (UI PREMIUM) ---
+    function showToast(message, type = 'success') {
+      const id = Date.now().toString();
+      const container = document.getElementById('toast-container');
+      const icons = {
+        success: 'check-circle',
+        error: 'alert-triangle',
+        info: 'info'
+      };
+      const bgColors = {
+        success: 'bg-emerald-950 border-emerald-500/50 text-emerald-300',
+        error: 'bg-red-950 border-red-500/50 text-red-300',
+        info: 'bg-navy-900 border-navy-700 text-blue-300'
+      };
+
+      const toast = document.createElement('div');
+      toast.id = `toast-${id}`;
+      toast.className = `flex items-start gap-3 p-4 rounded-xl border backdrop-blur-md shadow-xl transition-all duration-300 translate-x-full animate-bounce pointer-events-auto ${bgColors[type]}`;
+      toast.innerHTML = `
+        <i data-lucide="${icons[type]}" class="w-5 h-5 shrink-0"></i>
+        <div class="text-xs font-semibold leading-relaxed">${message}</div>
+        <button onclick="document.getElementById('toast-${id}').remove()" class="text-gray-400 hover:text-white ml-auto shrink-0">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons({ attrs: { class: 'w-4 h-4' } });
+
+      // Animación de entrada
+      setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+      }, 50);
+
+      // Desvanecimiento
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // --- MONITOREAR CONEXIÓN REAL CON FASTAPI (backend) ---
+    async function checkBackendHealth(manual = false) {
+      const badge = document.getElementById('db-status-indicator');
+      const healthBadge = document.getElementById('db-health-badge');
+
+      try {
+        const response = await fetch('http://localhost:8000/api/health', { method: 'GET' });
+        const data = await response.json();
+
+        if (data.api === 'ok' && data.database.status === 'ok') {
+          apiHealthState = { api: 'ok', database: data.database };
+          badge.className = "flex items-center gap-1.5 px-3 py-1 rounded-full border border-emerald-400/20 bg-emerald-400/10 text-emerald-400 text-xs font-medium cursor-pointer";
+          badge.innerHTML = `<i data-lucide="activity" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">BD Conectada</span><span class="w-2 h-2 rounded-full bg-emerald-400"></span>`;
+          healthBadge.className = "text-emerald-400 font-bold text-xs mt-0.5";
+          healthBadge.innerText = "FASTAPI BACKEND ACTIVO";
+
+          if (manual) showToast("Conectado exitosamente al servidor FastAPI.", 'success');
+          // Sincronizar la BD de mockups con la real del backend
+          await syncWithBackend();
+        }
+      } catch (err) {
+        apiHealthState = { api: 'offline', database: { status: 'offline', message: '' } };
+        badge.className = "flex items-center gap-1.5 px-3 py-1 rounded-full border border-yellow-400/20 bg-yellow-400/10 text-yellow-400 text-xs font-medium cursor-pointer";
+        badge.innerHTML = `<i data-lucide="activity" class="w-3.5 h-3.5 animate-pulse"></i><span class="hidden sm:inline">Modo Demo</span><span class="w-2 h-2 rounded-full bg-yellow-400"></span>`;
+        healthBadge.className = "text-yellow-400 font-bold text-xs mt-0.5";
+        healthBadge.innerText = "LOCAL MOCKUP";
+
+        if (manual) showToast("Servidor local no detectado. Utilizando base de datos local temporal en memoria.", 'info');
+      }
+      lucide.createIcons();
+    }
+
+    // --- SINCRONIZACIÓN HÍBRIDA CON EL BACKEND ---
+    async function syncWithBackend() {
+      // Intenta actualizar los datos de la pestaña activa desde el backend
+      try {
+        let endpointMap = {
+          baunit: '/unidad-administrativa/',
+          espacial: '/unidad-espacial/terrenos',
+          interesados: '/interesados/',
+          topografia: '/topografia/',
+          cartografia: '/cartografia/construcciones'
+        };
+
+        const res = await fetch(`http://localhost:8000/api${endpointMap[activeModule]}`);
+        if (res.ok) {
+          const data = await res.json();
+          localDatabase[activeModule] = data;
+          localStorage.setItem('sinic_db', JSON.stringify(localDatabase));
+          renderCRUDTable();
+        }
+      } catch (e) {
+        console.warn("Error de sincronización con backend:", e);
+      }
+    }
+
+    // --- SECCIÓN NAVEGACIÓN ---
+    function switchMainTab(tabId) {
+      document.querySelectorAll('main').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+      // Actualizar botón activo en navbar
+      const btns = ['aprende-sinic', 'aprende-uml', 'modelo-datos'];
+      btns.forEach(id => {
+        const btn = document.getElementById(`tab-btn-${id}`);
+        if (id === tabId) {
+          btn.className = "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-white bg-navy-600 shadow-md";
+        } else {
+          btn.className = "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-400 hover:text-white hover:bg-white/5";
+        }
+      });
+
+      if (tabId === 'modelo-datos') {
+        renderCRUDTable();
+      }
+      lucide.createIcons();
+    }
+
+    function switchAprendeTab(subTabId) {
+      // Ocultar paneles
+      ['panel-sub-resolucion', 'panel-sub-iso', 'panel-sub-interlis'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      // Mostrar panel activo
+      document.getElementById(`panel-${subTabId}`).classList.remove('hidden');
+
+      // Estilo de botones
+      ['resolucion', 'iso', 'interlis'].forEach(id => {
+        const el = document.getElementById(`subtab-${id}`);
+        if (`sub-${id}` === subTabId) {
+          el.className = "border-b-2 border-emerald-500 text-white px-4 py-3 text-sm font-medium flex items-center gap-2";
+        } else {
+          el.className = "border-b-2 border-transparent text-gray-400 hover:text-white px-4 py-3 text-sm font-medium flex items-center gap-2";
+        }
+      });
+    }
+
+    // --- RENDERIZADO SECCIÓN 1: APRENDE SINIC ---
+    function renderDefinitions() {
+      const grid = document.getElementById('definitions-grid');
+      grid.innerHTML = DEFINICIONES.map(item => `
+        <div class="bg-navy-900/40 border border-navy-800 rounded-xl p-5 hover:border-emerald-500/50 hover:shadow-lg transition duration-300">
+          <h3 class="text-white font-bold text-sm mb-2 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span> ${item.term}
+          </h3>
+          <p class="text-gray-400 text-xs leading-relaxed">${item.def}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderISOStandards() {
+      const grid = document.getElementById('iso-grid');
+      const icons = {
+        globe: 'globe',
+        scale: 'scale',
+        box: 'box',
+        coins: 'coins',
+        map: 'map'
+      };
+
+      grid.innerHTML = ESTANDARES_ISO.map(item => `
+        <div class="bg-navy-900/40 border border-navy-800 rounded-xl p-5 flex items-start gap-4 hover:border-navy-500 transition duration-300">
+          <div class="p-3 bg-navy-800/80 rounded-lg text-emerald-400 shrink-0">
+            <i data-lucide="${icons[item.icon]}" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span class="text-[10px] font-mono text-emerald-400 border border-emerald-400/20 px-2 py-0.5 rounded">${item.code}</span>
+            <h3 class="text-white font-bold text-sm mt-2 mb-1">${item.title}</h3>
+            <p class="text-gray-400 text-xs leading-relaxed">${item.desc}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderXTFCode() {
+      const codeContainer = document.getElementById('code-snippet-xtf');
+      codeContainer.innerText = XML_XTF_CODE;
+    }
+
+    // --- RENDERIZADO SECCIÓN 2: APRENDE UML (Diagrama SVG Interactivo) ---
+    function renderUMLDiagram() {
+      const container = document.getElementById('svg-container');
+      const svgCode = `
+        <svg viewBox="0 0 800 320" class="w-full h-auto select-none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Relaciones -->
+          <line x1="200" y1="150" x2="350" y2="150" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="5,5" />
+          <polygon points="350,150 340,145 340,155" fill="#6366f1" />
+          <text x="275" y="140" fill="#6366f1" font-size="9" text-anchor="middle" font-weight="600">interesado_en</text>
+          <text x="210" y="165" fill="#6366f1" font-size="9">0..*</text>
+          <text x="335" y="165" fill="#6366f1" font-size="9">1..*</text>
+
+          <line x1="570" y1="150" x2="630" y2="150" stroke="#10b981" stroke-width="1.5" stroke-dasharray="5,5" />
+          <polygon points="570,150 580,145 580,155" fill="#10b981" />
+          <text x="600" y="140" fill="#10b981" font-size="9" text-anchor="middle" font-weight="600">unidad_espacial</text>
+          <text x="580" y="165" fill="#10b981" font-size="9">1</text>
+          <text x="615" y="165" fill="#10b981" font-size="9">0..*</text>
+
+          <!-- Clase 1: LA_Party -->
+          <g class="cursor-pointer transition duration-300" onmouseover="showUMLInfo('party')" onmouseout="clearUMLInfo()">
+            <rect x="20" y="50" width="180" height="200" rx="8" fill="#0f172a" stroke="#4f46e5" stroke-width="2" />
+            <rect x="20" y="50" width="180" height="40" rx="8" fill="#4f46e5" />
+            <rect x="20" y="80" width="180" height="10" fill="#4f46e5" />
+            <text x="110" y="68" fill="white" font-size="9" font-weight="semibold" opacity="0.8" text-anchor="middle">«LADM_COL»</text>
+            <text x="110" y="82" fill="white" font-size="12" font-weight="bold" text-anchor="middle">LA_Party</text>
+            <!-- Atributos -->
+            <text x="30" y="115" fill="#9ca3af" font-size="9" font-family="monospace">+ ext_pid: String</text>
+            <text x="30" y="135" fill="#9ca3af" font-size="9" font-family="monospace">+ party_type: PartyType</text>
+            <text x="30" y="155" fill="#9ca3af" font-size="9" font-family="monospace">+ role: RRRoleType</text>
+          </g>
+
+          <!-- Clase 2: LA_BAUnit -->
+          <g class="cursor-pointer transition duration-300" onmouseover="showUMLInfo('baunit')" onmouseout="clearUMLInfo()">
+            <rect x="370" y="50" width="200" height="200" rx="8" fill="#0f172a" stroke="#0891b2" stroke-width="2" />
+            <rect x="370" y="50" width="200" height="40" rx="8" fill="#0891b2" />
+            <rect x="370" y="80" width="200" height="10" fill="#0891b2" />
+            <text x="470" y="68" fill="white" font-size="9" font-weight="semibold" opacity="0.8" text-anchor="middle">«LADM_COL»</text>
+            <text x="470" y="82" fill="white" font-size="12" font-weight="bold" text-anchor="middle">LA_BAUnit</text>
+            <!-- Atributos -->
+            <text x="380" y="115" fill="#9ca3af" font-size="9" font-family="monospace">+ ext_address_id: OID</text>
+            <text x="380" y="135" fill="#9ca3af" font-size="9" font-family="monospace">+ name: CharacterString</text>
+            <text x="380" y="155" fill="#9ca3af" font-size="9" font-family="monospace">+ type: BAUnitType</text>
+          </g>
+
+          <!-- Clase 3: LA_SpatialUnit -->
+          <g class="cursor-pointer transition duration-300" onmouseover="showUMLInfo('spatial')" onmouseout="clearUMLInfo()">
+            <rect x="600" y="50" width="180" height="200" rx="8" fill="#0f172a" stroke="#059669" stroke-width="2" />
+            <rect x="600" y="50" width="180" height="40" rx="8" fill="#059669" />
+            <rect x="600" y="80" width="180" height="10" fill="#059669" />
+            <text x="690" y="68" fill="white" font-size="9" font-weight="semibold" opacity="0.8" text-anchor="middle">«LADM_COL»</text>
+            <text x="690" y="82" fill="white" font-size="12" font-weight="bold" text-anchor="middle">LA_SpatialUnit</text>
+            <!-- Atributos -->
+            <text x="610" y="115" fill="#9ca3af" font-size="9" font-family="monospace">+ area: Area</text>
+            <text x="610" y="135" fill="#9ca3af" font-size="9" font-family="monospace">+ dimension: DimensionType</text>
+            <text x="610" y="155" fill="#9ca3af" font-size="9" font-family="monospace">+ geometry: GM_Object</text>
+          </g>
+        </svg>
+      `;
+      container.innerHTML = svgCode;
+    }
+
+    function showUMLInfo(cls) {
+      const infoBox = document.getElementById('uml-info-box');
+      const details = {
+        party: `<strong>LA_Party (Interesado)</strong>: Corresponde a <code>col_interesado</code> en el modelo físico. Modela los datos de identificación, tipo de interesado (natural/jurídico) y rol catastral.`,
+        baunit: `<strong>LA_BAUnit (Unidad Administrativa)</strong>: Corresponde a <code>col_baunit</code>. Agrupa predios y define la personalidad jurídica, derechos y restricciones territoriales.`,
+        spatial: `<strong>LA_SpatialUnit (Unidad Espacial)</strong>: Corresponde a <code>col_terreno</code> y <code>col_lindero</code>. Almacena las capas de linderos lineales y polígonos georreferenciados.`
+      };
+      infoBox.innerHTML = details[cls];
+      infoBox.className = "mt-4 bg-navy-900 border border-navy-700 rounded-lg p-3 text-xs min-h-[60px] text-gray-200";
+    }
+
+    function clearUMLInfo() {
+      const infoBox = document.getElementById('uml-info-box');
+      infoBox.innerHTML = "Pasa el cursor sobre una clase UML para ver sus atributos y equivalencia física en base de datos.";
+      infoBox.className = "mt-4 bg-navy-900/50 border border-navy-800 rounded-lg p-3 text-xs min-h-[60px] text-gray-400 flex items-center justify-center";
+    }
+
+    // --- SECCIÓN 3: RENDERIZADO DEL SIDEBAR Y TABLA CRUD ---
+    function renderSidebarMenu() {
+      const nav = document.getElementById('sidebar-menu');
+      const icons = {
+        baunit: 'building-2',
+        espacial: 'map-pin',
+        interesados: 'users',
+        topografia: 'compass',
+        cartografia: 'map'
+      };
+
+      nav.innerHTML = Object.keys(CRUD_CONFIG).map(key => {
+        const conf = CRUD_CONFIG[key];
+        const isActive = activeModule === key;
+        const btnClass = isActive
+          ? 'flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-semibold text-white bg-navy-600 shadow-md w-full text-left'
+          : 'flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 w-full text-left transition';
+
+        return `
+          <button onclick="switchCRUDModule('${key}')" class="${btnClass}">
+            <i data-lucide="${icons[key]}" class="w-4 h-4 shrink-0"></i>
+            <div class="min-w-0">
+              <span class="block truncate">${conf.title}</span>
+              <span class="block text-[9px] text-navy-300 font-mono mt-0.5">${conf.tableName}</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function switchCRUDModule(moduleKey) {
+      activeModule = moduleKey;
+      renderSidebarMenu();
+
+      // Actualizar información del CRUD en pantalla
+      const config = CRUD_CONFIG[activeModule];
+      document.getElementById('crud-active-label').innerText = config.title;
+      document.getElementById('crud-table-name').innerText = config.tableName;
+      document.getElementById('crud-title').innerText = config.title;
+      document.getElementById('crud-description').innerText = config.description;
+
+      renderCRUDTable();
+    }
+
+    function renderCRUDTable() {
+      const config = CRUD_CONFIG[activeModule];
+      const dataList = localDatabase[activeModule] || [];
+
+      // Render Headers
+      const headersRow = document.getElementById('table-headers');
+      headersRow.innerHTML = config.headers.map(h => `<th class="px-4 py-3 text-left">${h}</th>`).join('') + `<th class="px-4 py-3 text-right">Acciones</th>`;
+
+      // Render Body
+      const body = document.getElementById('table-body');
+      if (dataList.length === 0) {
+        body.innerHTML = `
+          <tr>
+            <td colSpan="${config.headers.length + 1}" class="px-4 py-8 text-center text-gray-500 text-xs">
+              No hay registros disponibles. Haz clic en <strong>Nuevo Registro</strong> para agregar uno.
+            </td>
+          </tr>
+        `;
+        document.getElementById('pagination-info').innerText = `Mostrando 0 registros`;
+        return;
+      }
+
+      body.innerHTML = dataList.map(row => {
+        // Mapea celdas según los campos de la configuración de forma dinámica
+        let fieldsHtml = ``;
+        fieldsHtml += `<td class="px-4 py-3 font-mono text-xs text-navy-400 font-bold">#${row.t_id}</td>`;
+
+        config.fields.forEach(f => {
+          let val = row[f.name];
+          if (val === undefined || val === null) val = '<span class="text-gray-600 italic">—</span>';
+          if (typeof val === 'string' && val.length > 30) val = `<span title="${val}">${val.slice(0, 27)}...</span>`;
+          fieldsHtml += `<td class="px-4 py-3 text-xs text-gray-300">${val}</td>`;
+        });
+
+        // Agrega UUID en penúltima columna si la tabla tiene ILI_TID
+        const tidDisplay = row.t_ili_tid ? row.t_ili_tid.slice(0, 8) + '...' : 'Generado';
+        fieldsHtml += `<td class="px-4 py-3 font-mono text-[10px] text-gray-500" title="${row.t_ili_tid || ''}">${tidDisplay}</td>`;
+
+        return `
+          <tr class="hover:bg-white/5 transition-colors border-b border-navy-800/40">
+            ${fieldsHtml}
+            <td class="px-4 py-3 text-right">
+              <div class="flex justify-end gap-1.5">
+                <button onclick="editRecord(${row.t_id})" class="p-1 rounded hover:bg-navy-800 text-gray-400 hover:text-white transition" title="Editar">
+                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="deleteRecord(${row.t_id})" class="p-1 rounded hover:bg-red-950 text-gray-400 hover:text-red-400 transition" title="Eliminar">
+                  <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('pagination-info').innerText = `Mostrando ${dataList.length} registros`;
+      lucide.createIcons();
+    }
+
+    // --- CRUD ACCIONES ---
+    function openFormModal() {
+      const modal = document.getElementById('crud-modal');
+      const title = document.getElementById('modal-title');
+      const container = document.getElementById('modal-fields-container');
+      const config = CRUD_CONFIG[activeModule];
+
+      title.innerText = editRecordId ? `Editar Registro (ID: ${editRecordId})` : `Nuevo Registro — ${config.title}`;
+      modal.classList.remove('hidden');
+
+      // Cargar campos de formulario dinámicamente
+      let fieldsHtml = '';
+      const currentRecord = editRecordId ? localDatabase[activeModule].find(r => r.t_id === editRecordId) : {};
+
+      config.fields.forEach(f => {
+        const value = currentRecord[f.name] !== undefined ? currentRecord[f.name] : '';
+        const requiredAsterisk = f.required ? '<span class="text-red-500">*</span>' : '';
+
+        if (f.type === 'text' || f.type === 'number') {
+          fieldsHtml += `
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">${f.label} ${requiredAsterisk}</label>
+              <input type="${f.type}" id="form-field-${f.name}" value="${value}" class="w-full px-3 py-2 bg-navy-950 border border-navy-800 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-transparent transition" placeholder="${f.placeholder || ''}" ${f.required ? 'required' : ''}>
+            </div>
+          `;
+        } else if (f.type === 'select') {
+          const optionsHtml = f.options.map(opt => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`).join('');
+          fieldsHtml += `
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">${f.label} ${requiredAsterisk}</label>
+              <select id="form-field-${f.name}" class="w-full px-3 py-2 bg-navy-950 border border-navy-800 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-transparent transition">
+                <option value="">— Seleccionar —</option>
+                ${optionsHtml}
+              </select>
+            </div>
+          `;
+        } else if (f.type === 'map') {
+          fieldsHtml += `
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">${f.label} ${requiredAsterisk}</label>
+              <textarea id="form-field-${f.name}" rows="2" class="w-full px-3 py-2 bg-navy-950 border border-navy-800 rounded-lg text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-transparent transition mb-2" placeholder="Ej: POINT(-74.29 4.57) o POLYGON((...))">${value}</textarea>
+              <div class="w-full h-48 rounded-lg overflow-hidden border border-navy-800 relative bg-navy-950">
+                <div id="mini-map" class="w-full h-full"></div>
+                <div class="absolute bottom-2 left-2 z-[999] bg-navy-900/80 px-2 py-1 rounded text-[10px] text-emerald-400 font-medium border border-navy-800">
+                  Haz clic en el mapa para capturar coordenadas (Modo POINT)
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      container.innerHTML = fieldsHtml;
+
+      // Inicializa Leaflet si existe campo de mapa
+      const mapField = config.fields.find(f => f.type === 'map');
+      if (mapField) {
+        setTimeout(() => {
+          initMiniMap(mapField.name, mapField.geomType, currentRecord[mapField.name]);
+        }, 100);
+      }
+    }
+
+    function closeFormModal() {
+      document.getElementById('crud-modal').classList.add('hidden');
+      editRecordId = null;
+      if (mapInstance) {
+        mapInstance.remove();
+        mapInstance = null;
+      }
+    }
+
+    // --- INICIALIZAR MINIMAPA LEAFLET PARA CAPTURA DE COORDENADAS ---
+    function initMiniMap(fieldName, geomType, existingVal) {
+      if (mapInstance) return;
+
+      // Coordenadas base en Bogotá
+      let center = [4.6097, -74.0821];
+
+      // Parsear geometría existente si es POINT
+      if (existingVal && existingVal.startsWith('POINT')) {
+        const coords = existingVal.replace('POINT(', '').replace(')', '').split(' ');
+        if (coords.length === 2) {
+          const lng = parseFloat(coords[0]);
+          const lat = parseFloat(coords[1]);
+          if (!isNaN(lat) && !isNaN(lng)) center = [lat, lng];
+        }
+      }
+
+      mapInstance = L.map('mini-map').setView(center, 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap'
+      }).addTo(mapInstance);
+
+      // Dibujar marcador inicial si existe
+      if (existingVal && existingVal.startsWith('POINT')) {
+        drawMarker = L.marker(center).addTo(mapInstance);
+      }
+
+      // Evento clic para modo captura POINT
+      if (geomType === 'point') {
+        mapInstance.on('click', (e) => {
+          const { lat, lng } = e.latlng;
+          // Actualizar textarea WKT
+          const wkt = `POINT(${lng.toFixed(6)} ${lat.toFixed(6)})`;
+          document.getElementById(`form-field-${fieldName}`).value = wkt;
+
+          // Mover marcador
+          if (drawMarker) {
+            drawMarker.setLatLng(e.latlng);
+          } else {
+            drawMarker = L.marker(e.latlng).addTo(mapInstance);
+          }
+        });
+      }
+    }
+
+    // --- GUARDAR REGISTRO (MOCK / BACKEND HÍBRIDO) ---
+    async function saveRecord() {
+      const config = CRUD_CONFIG[activeModule];
+      const newRecord = {};
+
+      // Validación simple
+      let valid = true;
+      config.fields.forEach(f => {
+        const input = document.getElementById(`form-field-${f.name}`);
+        if (!input.value && f.required) {
+          valid = false;
+        }
+        newRecord[f.name] = f.type === 'number' ? parseFloat(input.value) : input.value;
+      });
+
+      if (!valid) {
+        showToast("Por favor, completa todos los campos requeridos (*).", "error");
+        return;
+      }
+
+      // Si el Backend está en línea, enviar solicitud API real
+      if (apiHealthState.api === 'ok') {
+        try {
+          let endpointMap = {
+            baunit: '/unidad-administrativa/',
+            espacial: '/unidad-espacial/terrenos',
+            interesados: '/interesados/',
+            topografia: '/topografia/',
+            cartografia: '/cartografia/construcciones'
+          };
+          let url = `http://localhost:8000/api${endpointMap[activeModule]}`;
+          let method = 'POST';
+
+          if (editRecordId) {
+            url += editRecordId;
+            method = 'PUT';
+          }
+
+          const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newRecord)
+          });
+
+          if (res.ok) {
+            showToast(`Registro guardado exitosamente en base de datos PostgreSQL.`, "success");
+            closeFormModal();
+            checkBackendHealth(); // Sincroniza
+            return;
+          }
+        } catch (err) {
+          showToast("Error al conectar con la API real. Se guardará en almacenamiento local de demostración.", "info");
+        }
+      }
+
+      // Fallback a Base de Datos Local de Mockup (LocalStorage)
+      if (editRecordId) {
+        // Modo Edición
+        const index = localDatabase[activeModule].findIndex(r => r.t_id === editRecordId);
+        if (index !== -1) {
+          localDatabase[activeModule][index] = {
+            ...localDatabase[activeModule][index],
+            ...newRecord
+          };
+        }
+        showToast("Registro editado (Almacenamiento Demo Local).", "success");
+      } else {
+        // Modo Nuevo
+        const nextId = localDatabase[activeModule].length > 0
+          ? Math.max(...localDatabase[activeModule].map(r => r.t_id)) + 1
+          : 1;
+
+        localDatabase[activeModule].push({
+          t_id: nextId,
+          t_ili_tid: crypto.randomUUID(),
+          ...newRecord
+        });
+        showToast("Registro creado exitosamente (Almacenamiento Demo Local).", "success");
+      }
+
+      localStorage.setItem('sinic_db', JSON.stringify(localDatabase));
+      closeFormModal();
+      renderCRUDTable();
+    }
+
+    // --- EDITAR REGISTRO ---
+    function editRecord(id) {
+      editRecordId = id;
+      openFormModal();
+    }
+
+    // --- ELIMINAR REGISTRO ---
+    async function deleteRecord(id) {
+      if (!confirm(`¿Estás seguro de que deseas eliminar el registro #${id}?`)) return;
+
+      // Si el Backend está en línea, enviar DELETE a la API real
+      if (apiHealthState.api === 'ok') {
+        try {
+          let endpointMap = {
+            baunit: '/unidad-administrativa/',
+            espacial: '/unidad-espacial/terrenos/',
+            interesados: '/interesados/',
+            topografia: '/topografia/',
+            cartografia: '/cartografia/construcciones/'
+          };
+          const res = await fetch(`http://localhost:8000/api${endpointMap[activeModule]}${id}`, {
+            method: 'DELETE'
+          });
+
+          if (res.ok) {
+            showToast("Registro eliminado en la base de datos PostgreSQL.", "success");
+            checkBackendHealth(); // Sincroniza
+            return;
+          }
+        } catch (err) {
+          showToast("Error al conectar con la API real al eliminar.", "error");
+        }
+      }
+
+      // Eliminar de base de datos mockup local
+      localDatabase[activeModule] = localDatabase[activeModule].filter(r => r.t_id !== id);
+      localStorage.setItem('sinic_db', JSON.stringify(localDatabase));
+      showToast("Registro eliminado localmente.", "success");
+      renderCRUDTable();
+    }
+  </script>
+</body>
+</html>
