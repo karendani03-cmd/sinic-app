@@ -1,0 +1,39 @@
+version: '3.8'
+
+# SINIC App — Docker Compose
+# La base de datos PostgreSQL+PostGIS es EXTERNA (ya existe).
+# Este archivo sólo levanta el backend y el frontend.
+
+services:
+
+  # ── Backend FastAPI ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sinic_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:12345@host.docker.internal:5432/cun25279
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+    # host.docker.internal permite que el contenedor acceda a localhost del host
+
+  # ── Frontend Vite ──────────────────────────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: sinic_frontend
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - backend
+    restart: unless-stopped
